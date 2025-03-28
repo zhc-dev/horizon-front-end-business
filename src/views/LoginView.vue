@@ -10,7 +10,7 @@
                     <div class="sys-sub-name">{{ currentSlogan }}</div>
                 </div>
             </div>
-            <div class="form-box">
+            <div @keyup.enter="login" class="form-box">
                 <div class="form-item">
                     <img src="../assets/images/phone.png">
                     <el-input v-model="userAccount" placeholder="请输⼊账号" />
@@ -31,6 +31,7 @@ import { ref, onBeforeUnmount } from 'vue';
 import { loginService } from '@/apis/system.user';
 import router from '@/router';
 import { setToken } from '@/utils/cookie';
+import { ElMessage } from 'element-plus';
 
 const slogans = [
     "while(true) { 稳定运行 }",
@@ -69,12 +70,13 @@ const userAccount = ref('')
 const userPassword = ref('')
 
 const login = async function () {
-    const respone = await loginService(userAccount.value, userPassword.value)
-    if (respone.data.code === 1000) {
+    try {
+        const response = await loginService(userAccount.value, userPassword.value)
+        console.log('login response', response)
         router.push('/system')
-        setToken(respone.data.token)
-    } else {
-        alert(respone.data.msg)
+        setToken(response.data.token)
+    } catch (error) {
+        console.log("error:", error)
     }
 }
 </script>
