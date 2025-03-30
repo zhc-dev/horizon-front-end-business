@@ -20,20 +20,20 @@
         <el-main class="layout-bottom-box">
             <div class="left">
                 <el-aside width="200px" class="el-aside">
-                    <el-menu class="el-menu">
-                        <el-menu-item>
+                    <el-menu class="el-menu" router :default-active="$route.path">
+                        <el-menu-item index="/system/user">
                             <el-icon>
                                 <Management />
                             </el-icon>
                             <span>⽤⼾管理</span>
                         </el-menu-item>
-                        <el-menu-item>
+                        <el-menu-item index="/system/question">
                             <el-icon>
                                 <Management />
                             </el-icon>
                             <span>题⽬管理</span>
                         </el-menu-item>
-                        <el-menu-item>
+                        <el-menu-item index="/system/contest">
                             <el-icon>
                                 <Management />
                             </el-icon>
@@ -41,6 +41,9 @@
                         </el-menu-item>
                     </el-menu>
                 </el-aside>
+            </div>
+            <div class="right">
+                <RouterView />
             </div>
         </el-main>
     </el-container>
@@ -52,6 +55,9 @@ import {
     ArrowDownBold,
     SwitchButton
 } from '@element-plus/icons-vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 </script>
 <style lang="scss" scoped>
 .layout-container {
