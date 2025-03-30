@@ -7,3 +7,10 @@ export function loginService(userAccount, userPassword) {
         data: { userAccount, userPassword }
     })
 }
+
+export function currentUserService() {
+    return service({
+        url: '/system/user/current',
+        method: 'get',
+    })
+}

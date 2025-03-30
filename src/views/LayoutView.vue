@@ -4,7 +4,7 @@
             <el-dropdown placement="bottom-end">
                 <span class="el-dropdown__box">
                     <div>
-                        <strong>当前⽤⼾：</strong>超级管理员
+                        <strong>当前⽤⼾：</strong>{{ user.nickName }}
                     </div>
                     <el-icon>
                         <ArrowDownBold />
@@ -55,9 +55,21 @@ import {
     ArrowDownBold,
     SwitchButton
 } from '@element-plus/icons-vue'
-import { useRoute } from 'vue-router'
+import { currentUserService } from '@/apis/system.user';
+import { reactive } from 'vue';
 
-const route = useRoute()
+const user = reactive({
+    nickName: ''
+})
+
+async function getCurrentUser() {
+    const response = await currentUserService();
+    user.nickName = response.data.nickName;
+    console.log(response)
+}
+
+getCurrentUser();
+
 </script>
 <style lang="scss" scoped>
 .layout-container {
