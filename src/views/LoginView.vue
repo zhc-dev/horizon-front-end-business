@@ -69,7 +69,7 @@ onBeforeUnmount(() => {
 const userAccount = ref('')
 const userPassword = ref('')
 
-const login = async function () {
+const login = async () => {
     try {
         const response = await loginService(userAccount.value, userPassword.value)
         console.log('login response', response)

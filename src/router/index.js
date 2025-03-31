@@ -1,12 +1,12 @@
+import { getToken } from '@/utils/cookie'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHistory('/horizon'),
   routes: [
     {
-      path: "/",
-      name: "first_page",
-      component: () => import('@/views/LoginView.vue')
+      path: '/',
+      redirect: '/system/login'
     },
     {
       path: '/system/login',
@@ -36,6 +36,22 @@ const router = createRouter({
       ]
     },
   ],
+})
+
+router.beforeEach((to, from, next) => {
+  if (getToken()) {
+    if (to.path === '/system/login') {
+      next({ path: '/system/question' })
+    } else {
+      next();
+    }
+  } else {
+    if (to.path !== '/system/login') {
+      next({ path: '/system/login' })
+    } else {
+      next();
+    }
+  }
 })
 
 export default router

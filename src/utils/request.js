@@ -1,9 +1,10 @@
 import axios from 'axios'
-import { getToken } from './cookie';
-
+import { getToken } from '@/utils/cookie';
+import { removeToken } from '@/utils/cookie';
+import router from '@/router';
 const service = axios.create({
     baseURL: '/dev-api',
-    timeout: 5000 // 5s
+    timeout: 5000
 })
 
 
@@ -27,9 +28,9 @@ service.interceptors.response.use(
         const code = res.data.code;
         const msg = res.data.msg;
         if (code === 3001) {
-            ElMessage.error(msg);
+            // ElMessage.error(msg);
             removeToken()
-            router.push('/oj/login')
+            router.push('/system/login')
             return Promise.reject(new Error(msg));
         } else if (code !== 1000) {
             ElMessage.error(msg);
