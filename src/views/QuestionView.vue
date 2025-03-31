@@ -9,7 +9,7 @@
     <el-form-item>
       <el-button @click="onSearch" plain>搜索</el-button>
       <el-button @click="onReset" plain type="info">重置</el-button>
-      <el-button plain type="primary" :icon="Plus">添加题⽬</el-button>
+      <el-button plain type="primary" :icon="Plus" @click="onAddQuestion">添加题⽬</el-button>
     </el-form-item>
   </el-form>
   <el-table height="526px" :data="questionList">
@@ -26,9 +26,9 @@
     <el-table-column prop="createTime" label="创建时间" width="180px" />
     <el-table-column label="操作" width="100px" fixed="right">
       <template #default="{ row }">
-        <el-button type="text">编辑
+        <el-button type="text" @click="onEdit(row.questionId)">编辑
         </el-button>
-        <el-button type="text" class="red">删除
+        <el-button type="text" class="red" @click="onDelete(row.questionId)">删除
         </el-button>
       </template>
     </el-table-column>
@@ -36,13 +36,16 @@
   <el-pagination background size="small" layout="total, sizes, prev, pager, next, jumper" :total="total"
     v-model:current-page="params.pageNum" v-model:page-size="params.pageSize" :page-sizes="[5, 10, 15, 20]"
     @size-change="handleSizeChange" @current-change="handleCurrentChange" />
+  <question-drawer ref="questionDrawerRef" @success="onSuccess" />
 </template>
 <script setup>
 import { Plus } from "@element-plus/icons-vue"
 import Selector from "@/components/QuestionSelector.vue"
 import { reactive } from 'vue'
 import { ref } from 'vue'
-import { getQuestionListService } from "@/apis/question"
+import { getQuestionListService, delQuestionService } from "@/apis/question"
+import QuestionDrawer from "@/components/QuestionDrawer.vue"
+import { ElMessage } from "element-plus"
 const params = reactive({
   pageNum: 1,
   pageSize: 10,
@@ -84,4 +87,28 @@ const onReset = () => {
   getQuestionList()
 }
 
+const questionDrawerRef = ref()
+const onAddQuestion = () => {
+  questionDrawerRef.value.open()
+}
+
+const onSuccess = (service) => {
+  if (service === 'add') {
+    params.pageNum = 1
+  }
+  getQuestionList()
+}
+
+const onEdit = (questionId) => {
+  questionDrawerRef.value.open(questionId)
+}
+
+const onDelete = async (questionId) => {
+  const response = await delQuestionService(questionId)
+  if (response.code === 1000) {
+    ElMessage.success('删除成功')
+  }
+  params.pageNum = 1
+  getQuestionList()
+}
 </script>
