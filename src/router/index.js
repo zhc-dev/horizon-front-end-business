@@ -14,6 +14,11 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue')
     },
     {
+      path: '/system/step',
+      name: 'step',
+      component: () => import('@/views/StepsView.vue')
+    },
+    {
       path: '/system',
       name: 'system',
       component: () => import('@/views/LayoutView.vue'),

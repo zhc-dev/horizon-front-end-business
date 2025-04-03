@@ -12,7 +12,7 @@
       <el-button plain type="primary" :icon="Plus" @click="onAddQuestion">添加题⽬</el-button>
     </el-form-item>
   </el-form>
-  <el-table height="526px" :data="questionList">
+  <el-table height="530px" :data="questionList">
     <el-table-column prop="questionId" width="180px" label="题⽬id" />
     <el-table-column prop="title" label="题⽬标题" />
     <el-table-column prop="difficulty" label="题⽬难度" width="90px">
