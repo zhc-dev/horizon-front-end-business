@@ -44,8 +44,6 @@ const slogans = [
     "Warning: 管理员权限过载",
     "输入密码——或尝试 rm -rf /*",
     "Debug管理？先设个断点喝杯咖啡",
-    "权限？我即是root！",
-    "在0和1之间，驯服无序",
     "验证身份中... (别想sudo混入)",
     "验证身份中... (别想NaN混入)"
 ]
@@ -73,7 +71,7 @@ const login = async () => {
     try {
         const response = await loginService(userAccount.value, userPassword.value)
         console.log('login response', response)
-        router.push('/system')
+        router.push('/system/user')
         setToken(response.data.token)
     } catch (error) {
         console.log("error:", error)

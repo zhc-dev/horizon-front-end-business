@@ -14,11 +14,6 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue')
     },
     {
-      path: '/system/test',
-      name: 'test',
-      component: () => import('@/views/TestView.vue')
-    },
-    {
       path: '/system',
       name: 'system',
       component: () => import('@/views/LayoutView.vue'),
@@ -36,8 +31,14 @@ const router = createRouter({
         {
           path: 'contest',
           name: 'contest',
-          component: () => import('@/views/ContestView.vue')
-        }
+          component: () => import('@/views/ContestView.vue'),
+        },
+        {
+          path: 'update-contest',
+          name: 'uptade-contest',
+          component: () => import('@/views/UpdateContestView.vue')
+        },
+
       ]
     },
   ],

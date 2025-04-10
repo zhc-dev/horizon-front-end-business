@@ -70,12 +70,17 @@
                 <el-card header="语言配置" style="margin-right: 20px;">
                     <el-form-item label="选择语言" prop="selectedLanguages">
                          <el-select v-model="formData.selectedLanguages" multiple placeholder="请选择支持的语言" style="width: 100%;" @change="updateLanguageConfigs">
-                            <el-option v-for="lang in availableLanguages" :key="lang.language_id" :label="lang.name" :value="lang.language_id"> </el-option>
+                            <el-option 
+                                v-for="lang in availableLanguages" 
+                                :key="lang.language_id" 
+                                :label="lang.name + (lang.status ? ' ' + lang.status : '')" 
+                                :value="Number(lang.language_id)">
+                            </el-option>
                          </el-select>
                     </el-form-item>
                     <div v-if="formData.languageConfigs.length > 0" style="margin-top: 20px;">
                         <el-collapse accordion>
-                            <el-collapse-item v-for="(config, index) in formData.languageConfigs" :key="config.language_id" :title="`配置: ${getLanguageName(config.language_id)}`" :name="index">
+                            <el-collapse-item v-for="(config, index) in formData.languageConfigs" :key="'lang-config-'+config.language_id" :title="`配置: ${getLanguageName(config.language_id)}`" :name="index">
                                 <el-form-item :label="`时间限制 (ms)`" :prop="`languageConfigs.${index}.time_limit`" :rules="{ required: true, type: 'number', message: '请输入时间限制', trigger: 'blur' }">
                                     <el-input-number v-model="config.time_limit" :min="100" :step="100" placeholder="例如: 1000"></el-input-number>
                                 </el-form-item>
@@ -115,10 +120,9 @@
                         <el-collapse accordion v-model="activeTestCaseNames">
                             <el-collapse-item v-for="(testCase, index) in formData.testCases"
                                 :key="testCase._internalId"
-                                :title="`测试用例 ${index + 1}${testCase.is_sample > 0 ? ' (示例)' : ''}`"
+                                :title="`测试用例 ${index + 1} (ID: ${testCase.caseId || '新增'}) ${testCase.is_sample ? '示例值:'+testCase.is_sample : ''}`"
                                 :name="index">
                                 <div slot="title">
-                                    <span>测试用例 {{index + 1}}{{testCase.is_sample > 0 ? ' (示例)' : ''}}</span>
                                  <el-button
                                         v-if="formData.testCases.length > 1"
                                      type="text"
@@ -209,44 +213,16 @@
                         </el-alert>
                     </div>
 
-                    <!-- 语言配置部分 -->
-                    <div class="question-section" v-if="formData.languageConfigs && formData.languageConfigs.length > 0">
-                        <h3 class="section-heading">语言配置</h3>
-                        <el-table :data="formData.languageConfigs"  style="width: 100%">
-                            <el-table-column prop="language_id" label="语言" min-width="120">
-                                <template #default="{ row }">
-                                    {{ getLanguageName(row.language_id) }}
-                                </template>
-                            </el-table-column>
-                            <el-table-column prop="time_limit" label="时间限制(ms)" min-width="100"></el-table-column>
-                            <el-table-column prop="space_limit" label="空间限制(MB)" min-width="100"></el-table-column>
-                            <el-table-column label="默认代码" width="100">
-                                <template #default="{ row }">
-                                    <el-button type="text" size="small" @click="previewCode(row.default_code, '默认代码 - ' + getLanguageName(row.language_id))">预览</el-button>
-                                </template>
-                            </el-table-column>
-                            <el-table-column label="Main 函数" width="100">
-                                <template #default="{ row }">
-                                    <el-button type="text" size="small" @click="previewCode(row.main_func, 'Main 函数 - ' + getLanguageName(row.language_id))">预览</el-button>
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                    </div>
-                    <div v-else class="empty-section">
-                        <el-alert title="需要设置语言配置" type="warning" :closable="false">
-                            <el-button size="small" type="primary" @click="activeStep = 1">前往设置</el-button>
-                        </el-alert>
-                    </div>
-
                     <!-- 测试用例部分 -->
                     <div class="question-section" v-if="formData.testCases && formData.testCases.length > 0">
-                        <h3 class="section-heading">测试用例</h3>
-                        <el-table :data="formData.testCases" border style="width: 100%">
-                            <el-table-column type="index" label="用例编号" width="80"></el-table-column>
-                            <el-table-column prop="is_sample" label="是否示例" width="80">
+                        <h3 class="section-heading">测试用例 ({{formData.testCases.length}}个)</h3>
+                        <el-table :data="formData.testCases" border style="width: 100%" :key="'test-case-table'">
+                            <el-table-column type="index" label="编号" width="60"></el-table-column>
+                            <el-table-column prop="caseId" label="用例ID" width="120"></el-table-column>
+                            <el-table-column prop="is_sample" label="是否示例" width="100">
                                 <template #default="{ row }">
                                     <el-tag size="small" :type="row.is_sample > 0 ? 'success' : 'info'">
-                                        {{ row.is_sample > 0 ? '是' : '否' }}
+                                        {{ row.is_sample || 0 }}
                                     </el-tag>
                                 </template>
                             </el-table-column>
@@ -263,9 +239,34 @@
                             </el-table-column>
                         </el-table>
                     </div>
+
+                    <!-- 语言配置部分 -->
+                    <div class="question-section" v-if="formData.languageConfigs && formData.languageConfigs.length > 0">
+                        <h3 class="section-heading">语言配置 ({{formData.languageConfigs.length}}种)</h3>
+                        <el-table :data="formData.languageConfigs" style="width: 100%" :key="'language-table'">
+                            <el-table-column prop="language_id" label="语言" min-width="120">
+                                <template v-slot:default="{ row }">
+                                    {{ getLanguageName(Number(row.language_id)) }}
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="question_language_id" label="配置ID" min-width="100"></el-table-column>
+                            <el-table-column prop="time_limit" label="时间限制(ms)" min-width="100"></el-table-column>
+                            <el-table-column prop="space_limit" label="空间限制(MB)" min-width="100"></el-table-column>
+                            <el-table-column label="默认代码" width="100">
+                                <template v-slot:default="{ row }">
+                                    <el-button type="text" size="small" @click="previewCode(row.default_code, '默认代码 - ' + getLanguageName(Number(row.language_id)))">预览</el-button>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="Main 函数" width="100">
+                                <template v-slot:default="{ row }">
+                                    <el-button type="text" size="small" @click="previewCode(row.main_func, 'Main 函数 - ' + getLanguageName(Number(row.language_id)))">预览</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
                     <div v-else class="empty-section">
-                        <el-alert title="需要添加测试用例" type="warning" :closable="false">
-                            <el-button size="small" type="primary" @click="activeStep = 2">前往添加</el-button>
+                        <el-alert title="需要设置语言配置" type="warning" :closable="false">
+                            <el-button size="small" type="primary" @click="activeStep = 1">前往设置</el-button>
                         </el-alert>
                     </div>
 
@@ -290,10 +291,10 @@
 
                     <!-- 提交按钮 -->
                     <div class="submit-section">
-                        <el-button type="primary" size="large" @click="submitForm" :loading="isSubmitting" :disabled="!hasCompletedAllSteps">
+                        <el-button type="primary" size="large" @click="submitQuestion" :loading="isSubmitting" :disabled="!hasCompletedAllSteps">
                             {{ isSubmitting ? '提交中...' : (editMode ? '保存题目' : '添加题目') }}
-                        </el-button>
-                    </div>
+           </el-button>
+        </div>
                 </el-card>
             </div>
         </el-form>
@@ -304,6 +305,7 @@
 import { ref, reactive, computed, watch, nextTick } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { editQuestionService, addQuestionService } from '@/apis/question.js';
+import { getLanguageList } from '@/apis/language.js';
 
 // 导入高亮插件
 import hljs from 'highlight.js';
@@ -314,9 +316,6 @@ import MarkdownEditor from '@/components/MarkdownEditor.vue';
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue';
 
 // 导入编辑器组件
-import { QuillEditor } from '@vueup/vue-quill';
-import '@vueup/vue-quill/dist/vue-quill.snow.css';
-import '@vueup/vue-quill/dist/vue-quill.bubble.css';
 import CodeEditor from '@/components/CodeEditor.vue';
 
 let internalIdCounter = 0;
@@ -324,7 +323,6 @@ let internalIdCounter = 0;
 export default {
     name: "AddQuestionForm",
     components: { 
-        QuillEditor, 
         CodeEditor,
         MarkdownEditor,
         MarkdownRenderer
@@ -340,18 +338,10 @@ export default {
         }
     },
     data() {
-        // 预定义语言列表
-        const mockAvailableLanguages = [
-            { language_id: 1, name: "Java 11" }, 
-            { language_id: 2, name: "Python 3.9" }, 
-            { language_id: 3, name: "C++ 17" }, 
-            { language_id: 4, name: "JavaScript (Node.js)" }
-        ];
-        
         return {
             activeStep: 0,
             isSubmitting: false,
-            availableLanguages: mockAvailableLanguages,
+            availableLanguages: [], // 将从API获取，不再使用硬编码
             formData: {
                 basicInfo: { title: "", difficulty: null, content: "", tags: "", source: "", hint: "" },
                 selectedLanguages: [],
@@ -403,13 +393,21 @@ export default {
                 this.formData.testCases.every(testCase => 
                     testCase.input && testCase.output);
             
+            // 记录当前状态以便调试
+            console.log('表单状态检查:', {
+                hasBasicInfo,
+                hasLanguageConfigs,
+                hasTestCases,
+                testCases: this.formData.testCases
+            });
+            
             return hasBasicInfo && hasLanguageConfigs && hasTestCases;
         },
         hasBasicInfo() {
             return this.formData.basicInfo.title || this.formData.basicInfo.difficulty || this.formData.basicInfo.content;
         }
     },
-    watch: {
+     watch: {
         // 监视 questionData 变化，用于编辑模式
         questionData: {
             handler(newValue) {
@@ -426,7 +424,7 @@ export default {
                 this.testCaseCount = this.formData.testCases.length || 1;
                 
                 if (this.formData.testCases.length === 0) {
-                    this.initializeFirstTestCase();
+                this.initializeFirstTestCase();
                 } else {
                     this.$nextTick(() => {
                         this.validateAllTestCases();
@@ -468,31 +466,31 @@ export default {
     methods: {
         // --- 初始化方法 ---
         initializeFirstTestCase() {
-            if (this.formData.testCases.length === 0) {
-                const newCase = this.createDefaultTestCase();
-                this.formData.testCases.push(newCase);
+             if (this.formData.testCases.length === 0) {
+                 const newCase = this.createDefaultTestCase();
+                 this.formData.testCases.push(newCase);
 
-                this.$nextTick(() => {
+                 this.$nextTick(() => {
                     this.clearValidationForItem(0);
                 });
-            }
+             }
         },
         
         createDefaultTestCase() {
-            internalIdCounter++;
-            return {
+             internalIdCounter++;
+             return {
                 _internalId: `tc-${internalIdCounter}`,
-                input: "",
-                output: "",
-                is_sample: 0,
-                score: 10,
-            };
+                 input: "",
+                 output: "",
+                 is_sample: 0,
+                 score: 10,
+             };
         },
 
         // --- 步骤验证与导航 ---
         async validateStep(stepIndex, callback) {
             const fieldsToValidate = this.getFieldsForStep(stepIndex);
-            let formValid = true;
+             let formValid = true;
 
             if (fieldsToValidate.length > 0) {
                 try {
@@ -523,9 +521,9 @@ export default {
                 customValid = false;
             } else if (stepIndex === 2) {
                 const allCasesValid = this.validateAllTestCases();
-                if (!allCasesValid) {
-                    errorMsg = '请确保所有测试用例的输入和输出都已填写';
-                    customValid = false;
+                 if (!allCasesValid) {
+                     errorMsg = '请确保所有测试用例的输入和输出都已填写';
+                     customValid = false;
 
                     // 展开第一个无效的测试用例
                     const firstInvalidIndex = this.formData.testCases.findIndex((_, idx) =>
@@ -545,7 +543,7 @@ export default {
         },
         
         getFieldsForStep(stepIndex) {
-            switch (stepIndex) {
+             switch (stepIndex) {
                 case 0: return Object.keys(this.formData.basicInfo).map(k => `basicInfo.${k}`);
                 case 1: return ['selectedLanguages', ...this.formData.languageConfigs.flatMap((_, index) => [
                     `languageConfigs.${index}.time_limit`,
@@ -570,80 +568,122 @@ export default {
         
         prevStep() {
             if (this.activeStep > 0) {
-                this.activeStep--;
-            }
+                  this.activeStep--;
+             }
         },
 
         // --- 语言配置方法 ---
         updateLanguageConfigs() {
-            const currentIds = this.formData.languageConfigs.map(c => c.language_id);
-            const selectedIds = this.formData.selectedLanguages;
+            console.log('选择的语言IDs:', this.formData.selectedLanguages);
+            console.log('当前可用语言:', this.availableLanguages);
+            console.log('当前语言配置:', this.formData.languageConfigs);
             
-            // 保留已选择的配置
-            this.formData.languageConfigs = this.formData.languageConfigs.filter(config => 
-                selectedIds.includes(config.language_id)
+            const currentConfigs = [...this.formData.languageConfigs];
+            const selectedIds = this.formData.selectedLanguages.map(id => Number(id)); // 确保ID是数字
+            
+            // 保留已选择的配置（保持原有的question_language_id）
+            const retainedConfigs = currentConfigs.filter(config => 
+                selectedIds.includes(Number(config.language_id))
             );
             
             // 为新选择的语言添加配置
-            selectedIds.forEach(id => {
-                if (!currentIds.includes(id)) {
-                    this.formData.languageConfigs.push({
+            const newConfigs = selectedIds
+                .filter(id => !currentConfigs.some(config => Number(config.language_id) === id))
+                .map(id => {
+                    // 获取语言名称用于默认代码
+                    const langName = this.getLanguageName(id);
+                    return {
                         language_id: id,
                         time_limit: 1000,
                         space_limit: 128,
-                        default_code: `// Default code for ${this.getLanguageName(id)}\n`,
-                        main_func: ""
-                    });
-                }
-            });
+                        default_code: ``,
+                        main_func: "",
+                        question_language_id: null // 新增条目，没有ID
+                    };
+                });
+            
+            // 合并保留的配置和新配置
+            this.formData.languageConfigs = [...retainedConfigs, ...newConfigs];
             
             // 按顺序排序
             this.formData.languageConfigs.sort((a, b) => 
-                selectedIds.indexOf(a.language_id) - selectedIds.indexOf(b.language_id)
+                selectedIds.indexOf(Number(a.language_id)) - selectedIds.indexOf(Number(b.language_id))
             );
             
-            this.$refs.questionFormRef.clearValidate(this.getFieldsForStep(1));
+            console.log('更新后的语言配置:', this.formData.languageConfigs);
+            
+            if (this.$refs.questionFormRef) {
+                this.$refs.questionFormRef.clearValidate(this.getFieldsForStep(1));
+            }
         },
         
         getLanguageName(languageId) {
-            const lang = this.availableLanguages.find(l => l.language_id === languageId);
-            return lang ? lang.name : `Unknown Language (ID: ${languageId})`;
+            console.log(`获取语言名称, ID: ${languageId}, 类型: ${typeof languageId}`);
+            // 确保ID是数字类型进行比较
+            const numId = Number(languageId);
+            const lang = this.availableLanguages.find(l => Number(l.language_id) === numId);
+            
+            if (lang) {
+                console.log(`找到语言: ${lang.name}`);
+                return lang.name + (lang.status ? ' ' + lang.status : '');
+            }
+            return `未知语言 (ID: ${languageId})`;
         },
 
         // --- 测试用例方法 ---
         async validateTestCaseItem(index) {
+            const testCase = this.formData.testCases[index];
+            if (!testCase) return false;
+            
             const fieldsToValidate = [`testCases.${index}.input`, `testCases.${index}.output`];
             let isValid = true;
-            try {
-                await this.$refs.questionFormRef.validateField(fieldsToValidate);
-                this.testCaseValidationStatus[index] = 'valid';
-            } catch (error) {
+            
+            // 直接检查值是否存在
+            if (!testCase.input || !testCase.output) {
                 isValid = false;
                 this.testCaseValidationStatus[index] = 'invalid';
+                return false;
             }
+            
+            // 如果有表单引用，尝试进行表单验证
+            if (this.$refs.questionFormRef) {
+            try {
+                await this.$refs.questionFormRef.validateField(fieldsToValidate);
+                    this.testCaseValidationStatus[index] = 'valid';
+            } catch (error) {
+                isValid = false;
+                    this.testCaseValidationStatus[index] = 'invalid';
+                }
+            } else {
+                // 没有表单引用时，直接基于值判断
+                this.testCaseValidationStatus[index] = isValid ? 'valid' : 'invalid';
+            }
+            
+            // 触发计算属性更新
+            this.$forceUpdate();
             return isValid;
         },
 
-        async validateAllTestCases() {
-            let allValid = true;
-            for (let i = 0; i < this.formData.testCases.length; i++) {
-                const isValid = await this.validateTestCaseItem(i);
-                if (!isValid) {
-                    allValid = false;
-                }
-            }
-            return allValid;
-        },
+         async validateAllTestCases() {
+             let allValid = true;
+             for (let i = 0; i < this.formData.testCases.length; i++) {
+                 const isValid = await this.validateTestCaseItem(i);
+                 if (!isValid) {
+                     allValid = false;
+                 }
+             }
+             return allValid;
+         },
 
-        hasValidationError(index) {
+         hasValidationError(index) {
             return this.testCaseValidationStatus[index] === 'invalid';
-        },
+         },
 
-        clearValidationForItem(index) {
+         clearValidationForItem(index) {
             const fieldsToClear = [`testCases.${index}.input`, `testCases.${index}.output`];
-            this.$refs.questionFormRef.clearValidate(fieldsToClear);
+             this.$refs.questionFormRef.clearValidate(fieldsToClear);
             delete this.testCaseValidationStatus[index];
-        },
+         },
 
         removeTestCase(index) {
             this.$confirm(`确定要删除测试用例 ${index + 1} 吗?`, '提示', { 
@@ -651,51 +691,69 @@ export default {
                 cancelButtonText: '取消', 
                 type: 'warning' 
             }).then(() => {
-                const isRemovingActive = this.activeTestCaseCollapseName === index;
-                this.clearValidationForItem(index);
-                this.formData.testCases.splice(index, 1);
+                 const isRemovingActive = this.activeTestCaseCollapseName === index;
+                 this.clearValidationForItem(index);
+                 this.formData.testCases.splice(index, 1);
 
-                if (isRemovingActive) {
+                 if (isRemovingActive) {
                     this.activeTestCaseCollapseName = null;
-                } else if (this.activeTestCaseCollapseName !== null && this.activeTestCaseCollapseName > index) {
-                    this.activeTestCaseCollapseName--;
-                }
-                
+                 } else if (this.activeTestCaseCollapseName !== null && this.activeTestCaseCollapseName > index) {
+                     this.activeTestCaseCollapseName--;
+                 }
+
                 this.$message({ type: 'success', message: '删除成功!' });
-            }).catch(() => {});
+             }).catch(() => {});
         },
 
-        scrollToItem(index) {
-            this.$nextTick(() => {
-                const itemRef = this.$refs['collapseItem' + index];
-                if (itemRef && itemRef[0] && itemRef[0].$el) {
-                    itemRef[0].$el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            });
-        },
+         scrollToItem(index) {
+             this.$nextTick(() => {
+                 const itemRef = this.$refs['collapseItem' + index];
+                  if (itemRef && itemRef[0] && itemRef[0].$el) {
+                     itemRef[0].$el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                 }
+             });
+         },
 
         updateTestCaseCount(count) {
             const currentCount = this.formData.testCases.length;
+            console.log('当前测试用例数量:', currentCount, '新数量:', count);
+            console.log('当前测试用例:', JSON.parse(JSON.stringify(this.formData.testCases)));
             
             if (count > currentCount) {
                 // 需要添加测试用例
+                const newCases = [];
                 for (let i = currentCount; i < count; i++) {
-                    this.formData.testCases.push(this.createDefaultTestCase());
+                    newCases.push(this.createDefaultTestCase());
                 }
+                
+                // 将新测试用例添加到现有用例后面
+                this.formData.testCases = [...this.formData.testCases, ...newCases];
+                console.log('添加后的测试用例:', this.formData.testCases);
             } else if (count < currentCount) {
-                // 需要移除测试用例
+                // 需要移除测试用例，保留前count个
                 if (count === 0) {
                     count = 1;
                     this.testCaseCount = 1;
                 }
                 
-                this.formData.testCases.splice(count);
+                // 移除末尾的测试用例，保留前count个
+                this.formData.testCases = this.formData.testCases.slice(0, count);
                 
                 // 清理验证状态
                 for (let i = count; i < currentCount; i++) {
                     delete this.testCaseValidationStatus[i];
                 }
+                
+                console.log('移除后的测试用例:', this.formData.testCases);
             }
+            
+            // 强制刷新，确保UI更新
+            this.$nextTick(() => {
+                // 重新验证测试用例
+                this.validateAllTestCases();
+                // 触发计算属性重新计算
+                this.$forceUpdate();
+            });
         },
 
         validateTestCase(index) {
@@ -710,110 +768,153 @@ export default {
         },
 
         // --- 表单提交与数据初始化 ---
-        async submitForm() {
-            const allCasesValid = await this.validateAllTestCases();
-
-            this.$refs.questionFormRef.validate(async (formValid, invalidFields) => {
-                if (formValid && allCasesValid) {
-                    if (this.formData.languageConfigs.length === 0) {
-                        this.$message.error('必须配置至少一种语言');
-                        this.activeStep = 1;
-                        return;
-                    }
-                    
-                    if (this.formData.testCases.length === 0) {
-                        this.$message.error('必须至少包含一个有效的测试用例');
-                        this.activeStep = 2;
-                        return;
-                    }
-
-                    // 构建符合后端接口的数据结构
-                    const requestData = {
-                        title: this.formData.basicInfo.title,
-                        difficulty: this.formData.basicInfo.difficulty,
-                        content: this.formData.basicInfo.content,
-                        tags: this.formData.basicInfo.tags || '',
-                        source: this.formData.basicInfo.source || '',
-                        hint: this.formData.basicInfo.hint || '',
-                        // 转换测试用例格式
-                        cases: this.formData.testCases.map(tc => ({
-                            questionId: this.editMode && this.questionData.questionId ? this.questionData.questionId : null,
-                            input: tc.input,
-                            output: tc.output,
-                            isSample: tc.is_sample, // 注意从is_sample转为isSample
-                            score: tc.score
-                        })),
-                        // 转换语言配置格式
-                        languages: this.formData.languageConfigs.map(lc => ({
-                            languageId: lc.language_id, // 注意从language_id转为languageId
-                            timeLimit: lc.time_limit, // time_limit转为timeLimit
-                            spaceLimit: lc.space_limit, // space_limit转为spaceLimit
-                            defaultCode: lc.default_code, // default_code转为defaultCode
-                            mainFunc: lc.main_func // main_func转为mainFunc
-                        }))
-                    };
-
-                    // 输出到控制台以便检查
-                    console.log('提交数据结构:', JSON.stringify(requestData, null, 2));
-
-                    this.isSubmitting = true;
-                    
-                    try {
-                        // 方法1: 直接发送JSON数据
-                        if (this.editMode) {
-                            // 编辑模式，添加问题ID
-                            if (this.questionData.questionId) {
-                                requestData.questionId = this.questionData.questionId;
-                            }
-                            await editQuestionService(requestData);
-                            this.$message.success("题目编辑成功！");
-                        } else {
-                            await addQuestionService(requestData);
-                            this.$message.success("题目添加成功！");
-                        }
-                        
-                        // 触发提交成功事件
-                        this.$emit('submit-success', this.editMode ? 'edit' : 'add');
-                    } catch (error) {
-                        console.error("提交失败:", error);
-                        this.$message.error("提交失败，请稍后重试");
-                    } finally {
-                        this.isSubmitting = false;
-                    }
-                } else {
-                    this.$message.error('提交失败，请检查所有步骤中的必填项或错误项');
-
-                    const errorFields = Object.keys(invalidFields || {});
-                    let firstErrorStep = -1;
-
-                    if (errorFields.some(field => field.startsWith('basicInfo.'))) {
-                        firstErrorStep = 0;
-                    } else if (errorFields.some(field => field.startsWith('selectedLanguages') || field.startsWith('languageConfigs.'))) {
-                        firstErrorStep = 1;
-                    } else if (!allCasesValid || errorFields.some(field => field.startsWith('testCases.'))) {
-                        firstErrorStep = 2;
-                    }
-
-                    if (firstErrorStep !== -1 && this.activeStep !== firstErrorStep) {
-                        this.activeStep = firstErrorStep;
-                    }
-
-                    if (firstErrorStep === 2) {
-                        const firstInvalidIndex = this.formData.testCases.findIndex((_, idx) =>
-                            this.testCaseValidationStatus[idx] === 'invalid');
-
-                        if (firstInvalidIndex !== -1) {
-                            this.$nextTick(() => {
-                                this.activeTestCaseNames = [firstInvalidIndex];
-                            });
-                        }
-                    }
+        async submitQuestion() {
+                     this.isSubmitting = true;
+            try {
+                // 验证所有步骤
+                const allStepsValid = await this.validateAllSteps();
+                if (!allStepsValid) {
+                    this.isSubmitting = false;
+                    return;
                 }
-            });
+
+                // 准备请求数据
+                const requestData = {
+                    title: this.formData.basicInfo.title,
+                    difficulty: Number(this.formData.basicInfo.difficulty),
+                    content: this.formData.basicInfo.content,
+                    tags: this.formData.basicInfo.tags || '',
+                    source: this.formData.basicInfo.source || '',
+                    hint: this.formData.basicInfo.hint || '',
+                    
+                    // 处理测试用例
+                    cases: this.formData.testCases.map(tc => ({
+                        // 已有测试用例包含caseId
+                        ...(tc.caseId ? { caseId: tc.caseId } : {}),
+                        // 如果是编辑模式，包含questionId
+                        ...(this.editMode && this.questionData.questionId ? { questionId: this.questionData.questionId } : {}),
+                        input: tc.input,
+                        output: tc.output,
+                        isSample: Number(tc.is_sample),
+                        score: Number(tc.score || 10)
+                    })),
+                    
+                    // 处理语言配置
+                    languages: this.formData.languageConfigs.map(lc => ({
+                        languageId: Number(lc.language_id),
+                        // 已有配置包含questionLanguageId
+                        ...(lc.question_language_id ? { questionLanguageId: lc.question_language_id } : {}),
+                        // 如果是编辑模式，包含questionId
+                        ...(this.editMode && this.questionData.questionId ? { questionId: this.questionData.questionId } : {}),
+                        timeLimit: Number(lc.time_limit),
+                        spaceLimit: Number(lc.space_limit),
+                        defaultCode: lc.default_code || '',
+                        mainFunc: lc.main_func || ''
+                    }))
+                };
+                
+                // 如果是编辑模式，加上questionId
+                if (this.editMode && this.questionData.questionId) {
+                    requestData.questionId = this.questionData.questionId;
+                }
+
+                console.log('提交数据:', JSON.stringify(requestData));
+
+                // 使用正确的API引用
+                let response;
+                if (this.editMode) {
+                    console.log('调用编辑API');
+                    response = await editQuestionService(requestData);
+                 } else {
+                    console.log('调用添加API');
+                    response = await addQuestionService(requestData);
+                }
+
+                console.log('API响应:', response);
+                
+                if (response.code === 1000) {
+                    this.$message.success(this.editMode ? '题目更新成功' : '题目创建成功');
+                    this.$emit('submit-success', this.editMode ? 'edit' : 'add');
+                } else {
+                    this.$message.error(response.message || '操作失败');
+                }
+            } catch (error) {
+                console.error('提交题目时出错:', error);
+                // 详细记录错误信息，帮助诊断
+                if (error.response) {
+                    console.error('错误响应数据:', error.response.data);
+                    console.error('错误状态码:', error.response.status);
+                } else if (error.request) {
+                    console.error('请求已发送但没有收到响应');
+                    console.error(error.request);
+                } else {
+                    console.error('请求配置错误:', error.message);
+                }
+                console.error('错误配置:', error.config);
+                
+                this.$message.error('提交失败: ' + (error.response?.data?.message || error.message || '请检查网络连接'));
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+        
+        // 验证所有步骤
+        async validateAllSteps() {
+            // 验证基本信息
+            let basicInfoValid = true;
+            try {
+                await this.$refs.questionFormRef.validateField(this.getFieldsForStep(0));
+            } catch (error) {
+                basicInfoValid = false;
+                this.activeStep = 0;
+                this.$message.error('请完善基本信息');
+            }
+            
+            // 验证语言配置
+            if (this.formData.languageConfigs.length === 0) {
+                this.activeStep = 1;
+                this.$message.error('请至少配置一种语言');
+                return false;
+            }
+            
+            let languageConfigValid = true;
+            try {
+                await this.$refs.questionFormRef.validateField(this.getFieldsForStep(1));
+            } catch (error) {
+                languageConfigValid = false;
+                this.activeStep = 1;
+                this.$message.error('请完善语言配置');
+            }
+            
+            // 验证测试用例
+            if (this.formData.testCases.length === 0) {
+                this.activeStep = 2;
+                this.$message.error('请至少添加一个测试用例');
+                return false;
+            }
+            
+            const allCasesValid = await this.validateAllTestCases();
+            if (!allCasesValid) {
+                this.activeStep = 2;
+                this.$message.error('请完善测试用例');
+                
+                // 展开第一个无效的测试用例
+                const firstInvalidIndex = this.formData.testCases.findIndex((_, idx) =>
+                    this.testCaseValidationStatus[idx] === 'invalid');
+                    
+                          if (firstInvalidIndex !== -1) {
+                    this.activeTestCaseNames = [firstInvalidIndex];
+                }
+                return false;
+            }
+            
+            return basicInfoValid && languageConfigValid && allCasesValid;
         },
         
         initFormDataFromQuestionData() {
             if (!this.questionData || !this.editMode) return;
+
+            console.log("接收到的问题数据:", this.questionData);
 
             // 初始化基本信息
             this.formData.basicInfo = {
@@ -825,27 +926,47 @@ export default {
                 hint: this.questionData.hint || ''
             };
             
-            // 初始化语言配置
-            if (Array.isArray(this.questionData.languageConfigs)) {
-                this.formData.languageConfigs = JSON.parse(JSON.stringify(this.questionData.languageConfigs));
-                this.formData.selectedLanguages = this.questionData.languageConfigs.map(lc => lc.language_id);
-            } else {
-                this.formData.languageConfigs = [];
-                this.formData.selectedLanguages = [];
-            }
-            
-            // 初始化测试用例
-            if (Array.isArray(this.questionData.testCases)) {
-                this.formData.testCases = JSON.parse(JSON.stringify(this.questionData.testCases)).map(tc => ({
-                    ...tc,
-                    _internalId: `tc-${internalIdCounter++}`
-                }));
-                this.testCaseCount = this.formData.testCases.length;
-            } else {
-                this.formData.testCases = [];
-                this.testCaseCount = 1;
-                this.initializeFirstTestCase();
-            }
+            // 等待语言列表加载完成
+            this.$nextTick(async () => {
+                // 确保语言列表已加载
+                if (this.availableLanguages.length === 0) {
+                    await this.fetchLanguageList();
+                }
+                
+                // 初始化语言配置 - 直接使用返回的languageId
+                if (Array.isArray(this.questionData.languages)) {
+                    this.formData.languageConfigs = this.questionData.languages.map(lang => ({
+                        language_id: Number(lang.languageId), // 确保语言ID是数字
+                        time_limit: lang.timeLimit,
+                        space_limit: lang.spaceLimit,
+                        default_code: lang.defaultCode || '',
+                        main_func: lang.mainFunc || '',
+                        question_language_id: lang.questionLanguageId // 保存questionLanguageId
+                    }));
+                    this.formData.selectedLanguages = this.formData.languageConfigs.map(lc => Number(lc.language_id));
+                    console.log('编辑模式: 已设置语言配置', this.formData.languageConfigs);
+                    console.log('编辑模式: 选中的语言IDs', this.formData.selectedLanguages);
+                } else {
+                    this.formData.languageConfigs = [];
+                    this.formData.selectedLanguages = [];
+                }
+                
+                // 初始化测试用例 - 保留caseId
+                if (Array.isArray(this.questionData.cases)) {
+                    this.formData.testCases = this.questionData.cases.map(tc => ({
+                        _internalId: `tc-${internalIdCounter++}`,
+                        caseId: tc.caseId, // 保存后端返回的caseId
+                        input: tc.input,
+                        output: tc.output,
+                        is_sample: tc.isSample, // isSample 转换为 is_sample
+                        score: tc.score
+                    }));
+                    this.testCaseCount = this.formData.testCases.length || 1;
+                } else {
+                    this.formData.testCases = [];
+                    this.initializeFirstTestCase();
+                }
+            });
             
             // 更新步骤状态和验证
             this.$nextTick(() => {
@@ -854,8 +975,14 @@ export default {
             });
         },
         
+        // 根据语言名称获取语言ID的辅助方法
+        getLanguageIdByName(name) {
+            const language = this.availableLanguages.find(lang => lang.name === name);
+            return language ? language.language_id : null;
+        },
+        
         resetForm() {
-            this.$refs.questionFormRef.resetFields();
+             this.$refs.questionFormRef.resetFields();
             this.formData = {
                 basicInfo: { title: "", difficulty: null, content: "", tags: "", source: "", hint: "" },
                 selectedLanguages: [],
@@ -879,12 +1006,221 @@ export default {
             this.$nextTick(() => {
                 this.previewDialog.visible = true;
             });
-        }
+        },
+
+        // 从API返回数据直接加载题目详情
+        loadQuestionFromApiResponse(responseData) {
+            if (!responseData || !responseData.data) {
+                this.$message.error('题目数据格式不正确');
+                return;
+            }
+
+            console.log("加载API返回的题目数据:", responseData.data);
+
+            // 设置基本信息
+            this.formData.basicInfo = {
+                title: responseData.data.title || '',
+                difficulty: responseData.data.difficulty || null,
+                content: responseData.data.content || '',
+                tags: responseData.data.tags || '',
+                source: responseData.data.source || '',
+                hint: responseData.data.hint || ''
+            };
+
+            // 设置问题ID（如果存在）
+            if (responseData.data.questionId) {
+                this.questionData = {
+                    ...this.questionData,
+                    questionId: responseData.data.questionId
+                };
+            }
+            
+            // 等待语言列表加载完成
+            this.$nextTick(async () => {
+                // 确保语言列表已加载
+                if (this.availableLanguages.length === 0) {
+                    await this.fetchLanguageList();
+                }
+                
+                // 初始化语言配置 - 直接使用返回的languageId
+                if (Array.isArray(responseData.data.languages)) {
+                    console.log("加载语言配置，原始数据:", responseData.data.languages);
+                    this.formData.languageConfigs = responseData.data.languages.map(lang => ({
+                        language_id: Number(lang.languageId), // 确保是数字类型
+                        time_limit: lang.timeLimit,
+                        space_limit: lang.spaceLimit,
+                        default_code: lang.defaultCode || '',
+                        main_func: lang.mainFunc || '',
+                        question_language_id: lang.questionLanguageId // 保存questionLanguageId
+                    }));
+                    this.formData.selectedLanguages = this.formData.languageConfigs.map(lc => Number(lc.language_id));
+                    console.log("加载后的语言配置:", this.formData.languageConfigs);
+                    console.log("设置的语言IDs:", this.formData.selectedLanguages);
+                }
+                
+                // 初始化测试用例 - 保留caseId
+                if (Array.isArray(responseData.data.cases)) {
+                    console.log("加载测试用例，原始数据:", responseData.data.cases);
+                    this.formData.testCases = responseData.data.cases.map(tc => ({
+                        _internalId: `tc-${internalIdCounter++}`,
+                        caseId: tc.caseId, // 保存后端返回的caseId
+                        input: tc.input || '',
+                        output: tc.output || '',
+                        is_sample: tc.isSample, // isSample 转换为 is_sample
+                        score: tc.score || 0
+                    }));
+                    this.testCaseCount = this.formData.testCases.length;
+                    console.log("加载后的测试用例:", this.formData.testCases);
+                }
+                
+                // 更新步骤状态和验证
+                this.$nextTick(() => {
+                    this.$refs.questionFormRef?.clearValidate();
+                    // 可以跳转到概览页
+                    this.activeStep = 3;
+                    
+                    // 强制刷新表格数据
+                    this.refreshDisplayData();
+                });
+            });
+
+            this.$message.success('题目数据加载成功');
+        },
+
+        // 添加强制刷新显示数据的方法
+        refreshDisplayData() {
+            // 创建数据副本触发响应式更新
+            this.formData = {
+                ...this.formData,
+                languageConfigs: [...this.formData.languageConfigs],
+                testCases: [...this.formData.testCases]
+            };
+            console.log("刷新后的语言配置:", this.formData.languageConfigs);
+            console.log("刷新后的测试用例:", this.formData.testCases);
+
+            // 在加载完数据后，使用Vue的nextTick并强制更新组件
+            this.$nextTick(() => {
+                // 使用Vue的set方法确保响应式更新
+                this.formData.languageConfigs.forEach((config, index) => {
+                    this.$set(this.formData.languageConfigs, index, {...config});
+                });
+                this.formData.testCases.forEach((testCase, index) => {
+                    this.$set(this.formData.testCases, index, {...testCase});
+                });
+                
+                // 通知Vue组件需要重新渲染
+                this.$forceUpdate();
+            });
+        },
+
+        // 添加获取语言列表的方法
+        async fetchLanguageList() {
+            try {
+                const response = await getLanguageList();
+                console.log('语言API原始返回:', response);
+                
+                // 检查不同的可能的数据结构
+                if (response && response.rows && Array.isArray(response.rows)) {
+                    // 直接返回格式: { rows: [...] }
+                    this.processLanguageList(response.rows);
+                } else if (response && response.data && response.data.rows && Array.isArray(response.data.rows)) {
+                    // 嵌套在data中: { data: { rows: [...] } }
+                    this.processLanguageList(response.data.rows);
+                } else if (response && Array.isArray(response)) {
+                    // 直接是数组: [...]
+                    this.processLanguageList(response);
+                } else if (response && response.data && Array.isArray(response.data)) {
+                    // data是数组: { data: [...] }
+                    this.processLanguageList(response.data);
+                } else {
+                    console.error('无法识别的语言列表返回格式:', response);
+                    this.$message.warning('语言列表数据格式异常，将使用默认值');
+                    this.setDefaultLanguages();
+                }
+            } catch (error) {
+                console.error('获取语言列表失败:', error);
+                this.$message.warning('语言列表获取失败，将使用默认值');
+                this.setDefaultLanguages();
+            }
+        },
+        
+        // 处理语言列表数据
+        processLanguageList(languages) {
+            if (Array.isArray(languages)) {
+                // 显示所有语言，不论状态如何
+                this.availableLanguages = languages.map(lang => ({
+                    language_id: Number(lang.languageId), // 确保ID是数字类型
+                    name: lang.name,
+                    status: (lang.isEnabled === 0 ? '(已禁用)' : '') + 
+                           (lang.isDeleted === 1 ? '(已删除)' : '')
+                }));
+                
+                console.log('语言列表处理成功:', this.availableLanguages);
+            } else {
+                console.error('传入的语言列表不是数组');
+                this.setDefaultLanguages();
+            }
+        },
+        
+        // 设置默认语言列表（作为备用）
+        setDefaultLanguages() {
+            this.availableLanguages = [
+                { language_id: 1, name: "Java 11" }, 
+                { language_id: 2, name: "Python 3.9" }, 
+                { language_id: 3, name: "C++ 17" }, 
+                { language_id: 4, name: "JavaScript (Node.js)" }
+            ];
+        },
     },
     mounted() {
+        // 从API获取语言列表
+        this.fetchLanguageList();
+        
         if (this.editMode && this.questionData) {
             this.initFormDataFromQuestionData();
         }
+        
+        // 可以在控制台中调用 this.testLoadExampleQuestion() 来测试示例数据
+    },
+    
+    // 添加测试方法
+    testLoadExampleQuestion() {
+        // 示例数据，与用户提供的新格式相同
+        const exampleData = {
+            "code": 1000,
+            "msg": "操作成功",
+            "data": {
+                "questionId": "2111",
+                "difficulty": 2,
+                "title": "数值的整数次方 (剑指 Offer)",
+                "content": "# 描述\n实现 pow(x, n) ，即计算 x 的 n 次幂函数（即，xn）。不得使用库函数，同时不需要考虑大数问题。\n\n# 样例\n输入：x = 2.00000, n = 10\n输出：1024.00000",
+                "tags": "数学,递归",
+                "source": "剑指 Offer 16",
+                "hint": "考虑 n 为负数和 0 的情况，使用快速幂优化。",
+                "cases": [
+                    {
+                        "caseId": 21,
+                        "input": "x = 2.00000, n = 10",
+                        "output": "1024.00000",
+                        "isSample": 1,
+                        "score": 10
+                    }
+                ],
+                "languages": [
+                    {
+                        "questionLanguageId": 19,
+                        "languageId": 1,
+                        "name": "C++17",
+                        "timeLimit": 1000,
+                        "spaceLimit": 64,
+                        "defaultCode": "#include <cmath>\n\nclass Solution {\npublic:\n    double myPow(double x, int n) {\n        // 在这里编写你的代码\n        return 0.0;\n    }\n};\n\nint main() {\n    // 处理输入输出...\n    return 0;\n}",
+                        "mainFunc": null
+                    }
+                ]
+            }
+        };
+        
+        this.loadQuestionFromApiResponse(exampleData);
     }
 };
 </script>
@@ -1022,7 +1358,7 @@ export default {
   width: 100%;
   background-color: #fff;
   border-radius: 4px;
-  overflow: hidden;
+    overflow: hidden;
   border: 1px solid #f0f0f0;
   padding: 16px;
 }

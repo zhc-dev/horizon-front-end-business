@@ -1,12 +1,8 @@
 <template>
   <div class="markdown-editor">
     <div class="editor-container">
-      <textarea
-        v-model="markdownContent"
-        @input="updatePreview"
-        placeholder="请输入Markdown内容..."
-        class="editor-textarea"
-      ></textarea>
+      <textarea v-model="markdownContent" @input="updatePreview" placeholder="请输入Markdown内容..."
+        class="editor-textarea"></textarea>
     </div>
     <div class="preview-container" v-html="htmlContent"></div>
   </div>
@@ -63,7 +59,8 @@ export default {
   overflow: hidden;
 }
 
-.editor-container, .preview-container {
+.editor-container,
+.preview-container {
   flex: 1;
   padding: 16px;
   overflow-y: auto;
@@ -108,7 +105,8 @@ export default {
   line-height: 1.6;
 }
 
-.preview-container :deep(ul), .preview-container :deep(ol) {
+.preview-container :deep(ul),
+.preview-container :deep(ol) {
   padding-left: 20px;
   margin-bottom: 16px;
 }
@@ -145,7 +143,8 @@ export default {
   margin-bottom: 16px;
 }
 
-.preview-container :deep(th), .preview-container :deep(td) {
+.preview-container :deep(th),
+.preview-container :deep(td) {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: left;
@@ -167,4 +166,4 @@ export default {
 .preview-container :deep(a:hover) {
   text-decoration: underline;
 }
-</style> 
+</style>
